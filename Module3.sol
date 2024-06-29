@@ -1,43 +1,64 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.0;
 
-contract Token {
+contract MyUniqueToken {
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    address public owner;
 
-  uint256 public totalSupply;
-  address public owner;
-  string public name = "BlackRock";
-    string public symbol = "BLRK";
-    uint8 public decimals = 18;
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Mint(address indexed to, uint256 value);
 
-  constructor() {
-    owner = msg.sender;
-  }
+    constructor() {
+        name = "MyUniqueToken";
+        symbol = "MUT";
+        decimals = 18;
+        totalSupply = 1000 * 10** uint256(decimals);
+        balanceOf[msg.sender] = totalSupply;
+        owner = msg.sender;
 
-  mapping(address => uint256) public balances;
+        address[] memory addresses = new address[](3);
+        addresses[0] = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2;
+        addresses[1] = 0xCA35b7d915458EF540aDe6068dFe2F44E8fa733c;
+        addresses[2] = 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db;
+        uint256 tokensPerAddress = 1000 * 10**uint256(decimals);
 
-  // Mint function
-  function mint(address to, uint256 amount) public {
-    require(msg.sender == owner, "Only the contract owner can mint tokens.");
-    require(amount > 0, "Amount must be greater than 0.");
+        for (uint256 i = 0; i < addresses.length; i++) {
+            balanceOf[addresses[i]] += tokensPerAddress;
+            totalSupply += tokensPerAddress;
+            emit Transfer(address(0), addresses[i], tokensPerAddress);
+            emit Mint(addresses[i], tokensPerAddress);
+        }
+    }
 
-    balances[to] += amount;
-    totalSupply += amount;
-  }
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the contract owner can call this function");
+        _;
+    }
 
-  // Burn function
-  function burn(address from, uint256 amount) public {
-    require(amount <= balances[from], "Amount exceeds balance.");
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        require(_to != address(0), "Invalid address");
+        totalSupply += _amount;
+        balanceOf[_to] += _amount;
+        emit Mint(_to, _amount);
+        emit Transfer(address(0), _to, _amount);
+    }
 
-    balances[from] -= amount;
-    totalSupply -= amount;
-  }
+    function burn(uint256 _amount) public {
+        require(balanceOf[msg.sender] >= _amount, "Insufficient balance");
+        balanceOf[msg.sender] -= _amount;
+        totalSupply -= _amount;
+        emit Transfer(msg.sender, address(0), _amount);
+    }
 
-  // Transfer function
-  function transfer(address to, uint256 amount) public {
-    require(amount <= balances[msg.sender], "Amount exceeds balance.");
-    require(to != address(0), "Cannot transfer to the zero address.");
-
-    balances[msg.sender] -= amount;
-    balances[to] += amount;
-  }
+    function transfer(address _to, uint256 _amount) public {
+        require(_to != address(0), "Invalid address");
+        require(balanceOf[msg.sender] >= _amount, "Insufficient balance");
+        balanceOf[msg.sender] -= _amount;
+        balanceOf[_to] += _amount;
+        emit Transfer(msg.sender, _to, _amount);
+    }
 }
